@@ -3,12 +3,13 @@
 #include <stdlib.h>
 #include <time.h>
 
-void spawnmines(int** a, int n, int m, int level) {
+void spawnmines(int** a, int n, int m, int level, int miny) {
     int mines = 0;
     int minesmax;
     if (level == 1)minesmax = 10;
     if (level == 2)minesmax = 40;
     if (level == 3)minesmax = 99;
+    if (level == 4)minesmax = miny;
     while (mines < minesmax) {
         int x = rand() % m + 1;
         int y = rand() % n + 1;
@@ -20,15 +21,26 @@ void spawnmines(int** a, int n, int m, int level) {
     }
 }
 
-void write(char** b, int n, int m) {
+
+	
+void write_b(char** b, int n, int m) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++) {
-            printf("%c ", b[i][j]);
+            if (b[i][j] == '.') printf("\033[32m%c \033[0m", b[i][j]);
+            if (b[i][j] == '1') printf("\033[33m%c \033[0m", b[i][j]);
+            if (b[i][j] == '2') printf("\033[34m%c \033[0m", b[i][j]);
+            if (b[i][j] == '3') printf("\033[36m%c \033[0m", b[i][j]);
+            if (b[i][j] == '4') printf("\033[1;32m%c \033[0m", b[i][j]);
+            if (b[i][j] == '5') printf("\033[1;33m%c \033[0m", b[i][j]);
+            if (b[i][j] == '6') printf("\033[1;34m%c \033[0m", b[i][j]);
+            if (b[i][j] == '7') printf("\033[1;36m%c \033[0m", b[i][j]);
+            if (b[i][j] == '8') printf("\033[35m%c \033[0m", b[i][j]);
+            if (b[i][j] == 'F') printf("\033[31m%c \033[0m", b[i][j]);
+            if (b[i][j] == '#') printf("%c ", b[i][j]);            
         }
         printf("\n");
     }
 }
-
 void wheremines(int** a, int n, int m) {
 
     for (int i = 1; i <= n; i++) {
