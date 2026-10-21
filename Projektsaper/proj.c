@@ -8,10 +8,18 @@
 
 void clear_console() {
 #ifdef _WIN32
-    system("cls"); 
+    system("cls");
 #else
-    system("clear"); 
+    system("clear");
 #endif
+}
+
+// Skips the rest of the current input line; exits when input is closed
+void flush_line() {
+    int c;
+    while ((c = getchar()) != '\n') {
+        if (c == EOF) exit(1);
+    }
 }
 
 typedef struct {
@@ -27,12 +35,13 @@ int main(int argc, char *argv[]) {
     int opt;
 	int miny = -1;
 int jp = 1;
+    char* testfile = NULL;
 
     while ((opt = getopt(argc, argv, "a:")) != -1) {
         switch (opt) {
             case 'a':
 		jp = 2;
-                printf("Option -a with value: %s\n", optarg);
+                testfile = optarg;
                 break;
             default:
                 printf("Unknown option: -%c\n", optopt);
@@ -46,27 +55,29 @@ int jp = 1;
 
     if(jp == 1){
     int points = 0;
-    FILE* text = fopen("Score.txt", "rt");
     for (int i = 0; i < 5; i++) {
-        char t[255];
-        int y;
-        fscanf(text, "%s", t);
-        fscanf(text, "%d", &y);
-        strcpy(top[i].name, t);
-        top[i].score = y;
-        //printf("%15s %6d \n", top[i]->name, top[i]->score);
-
+        strcpy(top[i].name, "-");
+        top[i].score = 0;
     }
-    fclose(text);
+    FILE* text = fopen("Score.txt", "rt");
+    if (text != NULL) {
+        for (int i = 0; i < 5; i++) {
+            char t[255];
+            int y;
+            if (fscanf(text, "%254s", t) != 1) break;
+            if (fscanf(text, "%d", &y) != 1) break;
+            strcpy(top[i].name, t);
+            top[i].score = y;
+        }
+        fclose(text);
+    }
     printf("Welcome Player! Choose difficulty: \nFirst level: 9x9 10 mines     To choose print 1\nSecond level: 16x16 40 mines      To choose print 2\nThird level: 16x30 99 mines      To choose print 3\nForth level: Your own map! Points not multiply by 4!	    To choose print 4\nLevel:");
-    int level, n, m;
-    scanf("%d", &level);
-    if (level > 4 || level < 1) {
+    int level, n = 9, m = 9;
+    while (scanf("%d", &level) != 1 || level > 4 || level < 1) {
+        flush_line();
         printf("Choose from 1 to 4!");
-        scanf("%d", &level);
-	if(level > 4 || level < 1) return 0;
     }
-    else if (level == 1) {
+    if (level == 1) {
         n = 9;
         m = 9;
     }
@@ -80,23 +91,24 @@ int jp = 1;
     }
 else if( level == 4){
 	L1:
-	printf("Insert rows: "); scanf("%d", &n);
-	printf("Insert column: "); scanf("%d", &m);
-	printf("Insert mines: "); scanf("%d", &miny);
+	printf("Insert rows: ");
+	if (scanf("%d", &n) != 1) { flush_line(); n = 0; }
+	printf("Insert column: ");
+	if (scanf("%d", &m) != 1) { flush_line(); m = 0; }
+	printf("Insert mines: ");
+	if (scanf("%d", &miny) != 1) { flush_line(); miny = 0; }
 	if(n<=0 || m<=0 || miny<=0){printf("Insert natural positive numbers numbers\n"); goto L1;}
 	if(n*m-1 < miny){printf("Map is invalid"); return 0;}
 }
-    else {
-	printf("WRONG VALUE!");
-	return 0;
-    }
-    
+    // Own map (level 4) is not multiplied
+    int multiplier = (level == 4) ? 1 : level;
+
     printf("Hello Player! Insert your first position: ");
 
-    srand(time(NULL));
-    
+    srand((unsigned)time(NULL));
 
-    
+
+
 
     int** a = (int**)malloc((n + 2) * sizeof(int*));
     for (int i = 0; i < n + 2; i++) {
@@ -115,11 +127,10 @@ else if( level == 4){
 
     int o, p;
 
-    scanf("%d%d", &o, &p);
-    if (o < 1 || o>n || p < 1 || p>m){ 
+    while (scanf("%d%d", &o, &p) != 2 || o < 1 || o > n || p < 1 || p > m) {
+        flush_line();
         printf("Choose from 1 to %d and from 1 to %d!", n, m);
-        scanf("%d%d", &o, &p);
-        }
+    }
     a[o][p] = -2;
     spawnmines(a, n, m, level, miny);
     a[o][p] = 0;
@@ -136,7 +147,7 @@ else if( level == 4){
 printf("\n");
 rasp(a, b, n, m, o, p);
 
-   
+
 
 printf("\n");
 write_b(b, n, m);
@@ -146,16 +157,17 @@ while (check(a, n, m, &points) == 0) {
     clear_console();
     printf("Current map:\n");
     write_b(b, n, m);
-    points *= level;
-    printf("Score: %d\n", points);
+    printf("Score: %d\n", points * multiplier);
     printf("Flag (f) or dig (r)?\n");
-   
+
     A1:
-    getchar();
-    scanf("%c", &symb);
-    scanf("%d%d", &o, &p);
-    if (o > n || p > m) {
-        printf("Illegal move!");
+    if (scanf(" %c", &symb) != 1 || scanf("%d%d", &o, &p) != 2) {
+        flush_line();
+        printf("Illegal move!\n");
+        goto A1;
+    }
+    if (o < 1 || o > n || p < 1 || p > m) {
+        printf("Illegal move!\n");
         goto A1;
     }
     if (symb == 'r') {
@@ -171,21 +183,11 @@ while (check(a, n, m, &points) == 0) {
             printf("Illegal command! Try enter command again:\n");
             goto A1;
         }
-       
-   
+
+
         printf("\n");
         rasp(a, b, n, m, o, p);
-   
 
-        /*for (int i = 0; i < n + 2; i++) {
-            for (int j = 0; j < m + 2; j++) {
-                printf("%d ", a[i][j]);
-            }
-            printf("\n");
-        }
-        */
-
-       
     }
     else if (symb == 'f') {
         if (b[o - 1][p - 1] == '#')
@@ -201,10 +203,10 @@ while (check(a, n, m, &points) == 0) {
         printf("Illegal command! Try enter command again:\n");
         goto A1;
     }
-   
+
 }
 
-
+points *= multiplier;
 
 if (winner) {
     printf("YOU WON!\nEnter your name:\n");
@@ -214,19 +216,18 @@ else {
 }
 
 char im[254];
-//scanf_s("%[^\n]", &im, sizeof(im));
-scanf("%s", im);
+if (scanf("%253s", im) != 1) strcpy(im, "Player");
 for (int i = 0; i < 5; i++) {
     if (top[i].score < points) {
-       
+
         for (int j = 4; j > i; j--) {
             strcpy(top[j].name, top[j - 1].name);
             top[j].score = top[j - 1].score;
 
         }
-       
+
         strcpy(top[i].name, im);
-       
+
         top[i].score = points;
         break;
     }
@@ -245,28 +246,32 @@ for (int i = 0; i < 5; i++) {
 
 
 	FILE* trum = fopen("Score2.txt", "a");
-	fprintf(trum, "%s ", im);
-	fprintf(trum, "%d\n", points);
-	fclose(trum);
+	if (trum != NULL) {
+		fprintf(trum, "%s ", im);
+		fprintf(trum, "%d\n", points);
+		fclose(trum);
+	}
 
     FILE* text2 = fopen("Score.txt", "wt");
     for (int i = 0; i < 5; i++) {
-       
-        fprintf(text2, "%s\n", top[i].name);
-        fprintf(text2, "%d\n", top[i].score);
-        
+
+        if (text2 != NULL) {
+            fprintf(text2, "%s\n", top[i].name);
+            fprintf(text2, "%d\n", top[i].score);
+        }
+
         printf("%15s %6d \n", top[i].name, top[i].score);
 
     }
+    if (text2 != NULL) fclose(text2);
 
-    
-   
-    
     }
 	else if(jp == 2){
-		FILE* cin = fopen(argv[2], "r");
+		// Test mode: map size, map (-1 = mine, 0 = empty), then moves "row column"
+		FILE* cin = fopen(testfile, "r");
+		if (cin == NULL) { printf("Cannot open %s\n", testfile); return 1; }
 		int n, m;
-		fscanf(cin, "%d%d", &n, &m);
+		if (fscanf(cin, "%d%d", &n, &m) != 2 || n <= 0 || m <= 0) { printf("Invalid map size\n"); fclose(cin); return 1; }
 	    int** a = (int**)malloc((n + 2) * sizeof(int*));
     	for (int i = 0; i < n + 2; i++) {
         	a[i] = (int*)malloc((m + 2) * sizeof(int));
@@ -284,7 +289,7 @@ b[i][j] = '#';
 
 for(int i = 1; i<=n; i++){
 	for(int j = 1; j<=m; j++){
-		fscanf(cin, "%d", &a[i][j]);
+		if (fscanf(cin, "%d", &a[i][j]) != 1) a[i][j] = 0;
 	}
 }
 
@@ -293,16 +298,16 @@ wheremines(a, n, m);
 
 
 int x, y, score = 0, goodmoves = 0;
-while((fscanf(cin, "%d%d", &x, &y) == 2) && a[x][y] != -1){
-
-rasp(a, b, n, m, x, y);
-goodmoves++;
-if(check(a, n, m, &score) == 1) break;
-
-
-}
 int bomb = 1;
-if(a[x][y] == -1)bomb = 0;
+while (fscanf(cin, "%d%d", &x, &y) == 2) {
+	if (x < 1 || x > n || y < 1 || y > m) continue; // skip moves outside the map
+	if (a[x][y] == -1) { bomb = 0; break; }
+
+	rasp(a, b, n, m, x, y);
+	goodmoves++;
+	if(check(a, n, m, &score) == 1) break;
+}
+check(a, n, m, &score);
 printf("%d %d %d", goodmoves, score, bomb);
 fclose(cin);
 

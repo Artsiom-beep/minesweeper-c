@@ -5,7 +5,7 @@
 
 void spawnmines(int** a, int n, int m, int level, int miny) {
     int mines = 0;
-    int minesmax;
+    int minesmax = 10;
     if (level == 1)minesmax = 10;
     if (level == 2)minesmax = 40;
     if (level == 3)minesmax = 99;
@@ -80,7 +80,7 @@ void rasp(int** a, char** b, int n, int m, int o, int p) {
                         rasp(a, b, n, m, new_o, new_p); 
                     }
                     else if (a[new_o][new_p] > 0) {
-                        b[new_o - 1][new_p - 1] = a[new_o][new_p] + '0'; 
+                        b[new_o - 1][new_p - 1] = (char)(a[new_o][new_p] + '0'); 
                         a[new_o][new_p] = -3; 
                     }
                 }
@@ -89,7 +89,7 @@ void rasp(int** a, char** b, int n, int m, int o, int p) {
     }
     else if (a[o][p] > 0) {
         
-        b[o - 1][p - 1] = a[o][p] + '0';
+        b[o - 1][p - 1] = (char)(a[o][p] + '0');
         a[o][p] = -3; 
     }
 }
@@ -104,7 +104,7 @@ int check(int** a, int n, int m, int *points) {
 
     for (int i = 1; i <= n; i++) {
         for (int j = 1; j <= m; j++) {
-            if (a[i][j] > 0) return 0;
+            if (a[i][j] >= 0) return 0; // unrevealed safe cell (number or empty)
             
         }
     }

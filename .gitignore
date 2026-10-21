@@ -1,0 +1,6 @@
+project_output
+*.o
+*.exe
+*.docx
+.vs/
+x64/
